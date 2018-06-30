@@ -78,7 +78,6 @@ actions (TablutGame ShieldPlayer t) =
 actions (TablutGame SwordPlayer t) = 
     [(ShieldPlayer, []) , (SwordPlayer, acciones t SwordPlayer)]
 
--- TODO: no computar movimientos donde se saltan piezas
 acciones :: Tablero -> TablutPlayer -> [TablutAction]
 acciones t p = do
     i <- [0..8]
@@ -91,16 +90,19 @@ acciones t p = do
         movsVert i j = do
             i' <- delete i [0..8]
             c' <- maybeToList $ getDeTablero t i' j
-            if c' == Vacia
+            if not (any (/=Vacia) (piezasEnLineaVert i i' j)) && c' == Vacia
                 then return $  Mover Vertical (i, j) (i' - i)
                 else []
             --null ([c'' | c]
         movsHoriz i j = do
             j' <- delete j [0..8]
             c' <- maybeToList $ getDeTablero t i j'
-            if c' == Vacia
+            if not (any (/=Vacia) (piezasEnLineaHoriz j j' i)) && c' == Vacia
                 then return $  Mover Horizontal (i, j) (j' - j)
                 else []
+        piezasEnLineaHoriz a b k = [c | j'' <- entre a b, c <- maybeToList (getDeTablero t k j'')]
+        piezasEnLineaVert a b k = [c | i'' <- entre a b, c <- maybeToList (getDeTablero t i'' k)]
+        entre a b = [p | p <- [0..8], p `elem` ([(a+1)..b]++[b..(a-1)]) ]
     
 
 -- Aplica una acción al tablero dando el nuevo estado de juego
