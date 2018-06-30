@@ -138,7 +138,7 @@ reyRodeado t (i, j) = fromJust $ do
     w <- getDeTablero t i (j - 1)
     a <- getDeTablero t (i-1) j
     s <- getDeTablero t i (j + 1)
-    d <- getDeTablero t (i+1) (j - 1)
+    d <- getDeTablero t (i+1) j
     return ((w, a, s, d) == (PeonEspada, PeonEspada, PeonEspada, PeonEspada))
 
 {- Si el juego está terminado retorna el resultado de juego para cada jugador. 
@@ -237,7 +237,7 @@ de consola.
 -}
 runOnConsole :: IO [(TablutPlayer, Int)]
 runOnConsole = do
-    runMatch (randomAgent ShieldPlayer, randomAgent SwordPlayer) beginning
+    runMatch (consoleAgent ShieldPlayer, consoleAgent SwordPlayer) beginning
 
 {- El agente de consola ´consoleAgent´ muestra el estado de juego y los movimientos disponibles por
 consola, y espera una acción por entrada de texto.
