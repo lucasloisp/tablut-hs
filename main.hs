@@ -112,7 +112,7 @@ next (TablutGame ShieldPlayer _) (SwordPlayer, _) = error "Este no es el jugador
 next (TablutGame SwordPlayer _) (ShieldPlayer, _) = error "Este no es el jugador activo"
 next (TablutGame p t) (p', m@(Mover _ coord _)) = 
     if jugadorEs t coord p 
-        then TablutGame (oponente p) (realizarMov m t) 
+        then TablutGame (oponente p) (realizarMov m t)  -- Revisar alrededores por piezas comidas
         else error "No tienes una ficha en esa posición"
 
 realizarMov :: TablutAction -> Tablero -> Tablero
@@ -227,10 +227,10 @@ agentes dados. Retorna una tupla con los puntajes (score) finales del juego. -}
 runMatch :: (TablutAgent, TablutAgent) -> TablutGame -> IO [(TablutPlayer, Int)]
 runMatch ags@(ag1, ag2) g = do
    putStrLn (showBoard g)
-   case (activePlayer g) of
+   case activePlayer g of
       Nothing -> return $ result g
       Just p -> do
-         let ag = [ag1, ag2] !! (fromJust $ elemIndex p [ShieldPlayer, SwordPlayer])
+         let ag = [ag1, ag2] !! fromJust ( elemIndex p [ShieldPlayer, SwordPlayer])
          move <- ag g
          runMatch ags (next g (p, fromJust move))
 
@@ -238,8 +238,7 @@ runMatch ags@(ag1, ag2) g = do
 de consola.
 -}
 runOnConsole :: IO [(TablutPlayer, Int)]
-runOnConsole = do
-    runMatch (consoleAgent ShieldPlayer, consoleAgent SwordPlayer) beginning
+runOnConsole = runMatch (consoleAgent ShieldPlayer, consoleAgent SwordPlayer) beginning
 
 {- El agente de consola ´consoleAgent´ muestra el estado de juego y los movimientos disponibles por
 consola, y espera una acción por entrada de texto.
