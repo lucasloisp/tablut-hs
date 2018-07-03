@@ -84,22 +84,25 @@ acciones t p = do
     j <- [0..8]
     c <- maybeToList $ getDeTablero t i j
     if c `elem` piezas p
-        then movsVert i j ++ movsHoriz i j
+        then movArriba i j ++ movAbajo i j ++ movIzq i j ++ movDer i j
         else []
     where
-        movsVert i j = do
-            i' <- delete i [0..8]
-            c' <- maybeToList $ getDeTablero t i' j
-            if not (any (/=Vacia) (piezasEnLineaVert i i' j)) && c' == Vacia
-                then return $  Mover Vertical (i, j) (i' - i)
+        movsVert i j m d = do
+            c' <- maybeToList $ getDeTablero t (i + d) j
+            if c' == Vacia
+                then Mover Vertical (i, j) d : movsVert i j m (m d)
                 else []
-            --null ([c'' | c]
-        movsHoriz i j = do
-            j' <- delete j [0..8]
-            c' <- maybeToList $ getDeTablero t i j'
-            if not (any (/=Vacia) (piezasEnLineaHoriz j j' i)) && c' == Vacia
-                then return $  Mover Horizontal (i, j) (j' - j)
+        movsHoriz i j m d = do
+            c' <- maybeToList $ getDeTablero t i (j + d)
+            if c' == Vacia
+                then Mover Horizontal (i, j) d : movsHoriz i j m (m d)
                 else []
+
+        movArriba i j = movsVert i j (+1) 1
+        movAbajo i j = movsVert i j (subtract 1) (-1)
+        movIzq i j = movsHoriz i j (subtract 1) (-1)
+        movDer i j = movsHoriz i j (+1) 1
+
         piezasEnLineaHoriz a b k = [c | j'' <- entre a b, c <- maybeToList (getDeTablero t k j'')]
         piezasEnLineaVert a b k = [c | i'' <- entre a b, c <- maybeToList (getDeTablero t i'' k)]
         entre a b = [p | p <- [0..8], p `elem` ([(a+1)..b]++[b..(a-1)]) ]
@@ -205,7 +208,7 @@ instance Show TablutAction where
         case dd of Vertical -> algebraica (i + d) j
                    Horizontal -> algebraica i (j + d)
         where algebraica i j = letra j:show i
-              letra i = "abcdefhgi" !! i
+              letra i = "abcdefghi" !! i
 
 readAction :: String -> TablutAction
 readAction l = Mover dir (i, j) dd
