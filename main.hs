@@ -115,8 +115,61 @@ next (TablutGame ShieldPlayer _) (SwordPlayer, _) = error "Este no es el jugador
 next (TablutGame SwordPlayer _) (ShieldPlayer, _) = error "Este no es el jugador activo"
 next (TablutGame p t) (p', m@(Mover _ coord _)) = 
     if jugadorEs t coord p 
-        then TablutGame (oponente p) (realizarMov m t)  -- Revisar alrededores por piezas comidas
+        then fromJust $ do
+            let t' = realizarMov m t
+            let (i', j') = nuevasCoordenadas m
+            
+            return $ TablutGame (oponente p) (quitarComidos t' (i', j') p)
         else error "No tienes una ficha en esa posición"
+
+nuevasCoordenadas :: TablutAction -> (Int, Int)
+nuevasCoordenadas (Mover Horizontal (i, j) d) = (i, j+d)
+nuevasCoordenadas (Mover Vertical (i, j) d) = (i+d, j)
+
+
+
+quitarComidos :: Tablero -> (Int, Int) -> TablutPlayer -> Tablero
+quitarComidos t (i, j) p = 
+    let p = [((i+1, j), (i+2, j)), ((i-1, j), (i-2, j)), ((i, j+1), (i, j+2)), ((i, j-1), (i, j-2))]
+    in foldl nuevoTableroComiendo t p
+    where
+        tuPeon SwordPlayer = PeonEspada
+        tuPeon ShieldPlayer = PeonEscudo
+        nuevoTableroComiendo t ((i, j), (i', j')) = fromMaybe t $ do
+            victima <- getDeTablero t i j
+            ally <- getDeTablero t i' j'
+            if victima == tuPeon (oponente p) && ally == tuPeon p
+                then return $ eliminaElPeon t (i, j)
+                else Nothing
+
+
+
+
+
+eliminaElPeon :: Tablero -> (Int,Int) -> Tablero
+eliminaElPeon t (i,j) = fromJust $ do
+    c <- getDeTablero t i j
+    setEnTablero t i j Vacia
+
+{-Funciona igual que reyRodeado pero recibe un tipo de casilla,
+PeonBlanco o PeonNegro y devuelve true si el peón esta encerrado 
+vertical u horizontalmente. -}
+peonRodeado :: Tablero -> (Int,Int) -> Casilla -> Bool
+peonRodeado t (i,j) c = peonRodeadoHor || peonRodeadoVer
+    where
+        hor = do
+            w <- getDeTablero t i (j - 1)
+            s <- getDeTablero t i (j + 1)
+            return ((w,s) == (c,c))
+            
+        ver = do
+            a <- getDeTablero t (i-1) j   
+            d <- getDeTablero t (i+1) j
+            return ((a,d) == (c,c))
+        
+        peonRodeadoHor = fromMaybe False hor -- Si es Nothing es falso (estamos en un borde)
+        peonRodeadoVer = fromMaybe False ver 
+
 
 realizarMov :: TablutAction -> Tablero -> Tablero
 realizarMov (Mover Horizontal (i, j) d) t = fromJust $ do
@@ -241,7 +294,7 @@ runMatch ags@(ag1, ag2) g = do
 de consola.
 -}
 runOnConsole :: IO [(TablutPlayer, Int)]
-runOnConsole = runMatch (consoleAgent ShieldPlayer, consoleAgent SwordPlayer) beginning
+runOnConsole = runMatch (consoleAgent ShieldPlayer, randomAgent SwordPlayer) beginning
 
 {- El agente de consola ´consoleAgent´ muestra el estado de juego y los movimientos disponibles por
 consola, y espera una acción por entrada de texto.
