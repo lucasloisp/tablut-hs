@@ -12,21 +12,18 @@ type Fila = (Casilla, Casilla, Casilla, Casilla, Casilla, Casilla, Casilla, Casi
 type Tablero = (Fila, Fila, Fila, Fila, Fila, Fila, Fila, Fila, Fila)
 data TablutGame = TablutGame TablutPlayer Tablero
 
-tablero :: TablutGame -> Tablero
-tablero (TablutGame _ t) = t
-
 
 -- Funciones asistenes para trabajar con tuplas de 9 elementos
 getNUpla :: (a, a, a, a, a, a, a, a, a) -> Int -> Maybe a
-getNUpla (a, _, _, _, _, _, _, _, _) 0= Just a
-getNUpla (_, a, _, _, _, _, _, _, _) 1= Just a
-getNUpla (_, _, a, _, _, _, _, _, _) 2= Just a
-getNUpla (_, _, _, a, _, _, _, _, _) 3= Just a
-getNUpla (_, _, _, _, a, _, _, _, _) 4= Just a
-getNUpla (_, _, _, _, _, a, _, _, _) 5= Just a
-getNUpla (_, _, _, _, _, _, a, _, _) 6= Just a
-getNUpla (_, _, _, _, _, _, _, a, _) 7= Just a
-getNUpla (_, _, _, _, _, _, _, _, a) 8= Just a
+getNUpla (a, _, _, _, _, _, _, _, _) 0 = Just a
+getNUpla (_, a, _, _, _, _, _, _, _) 1 = Just a
+getNUpla (_, _, a, _, _, _, _, _, _) 2 = Just a
+getNUpla (_, _, _, a, _, _, _, _, _) 3 = Just a
+getNUpla (_, _, _, _, a, _, _, _, _) 4 = Just a
+getNUpla (_, _, _, _, _, a, _, _, _) 5 = Just a
+getNUpla (_, _, _, _, _, _, a, _, _) 6 = Just a
+getNUpla (_, _, _, _, _, _, _, a, _) 7 = Just a
+getNUpla (_, _, _, _, _, _, _, _, a) 8 = Just a
 getNUpla _ _= Nothing 
 
 setNUpla :: (a, a, a, a, a, a, a, a, a) -> Int -> a -> Maybe (a, a, a, a, a, a, a, a, a)
@@ -42,22 +39,20 @@ setNUpla (e0, e1, e2, e3, e4, e5, e6, e7, _) 8 e' = Just (e0, e1, e2, e3, e4, e5
 setNUpla _ _ _ = Nothing
 
 
--- Funciones de acceso al tablero, abrstracción
-{-
-    La flecha <- es una "asignación" de Maybe a en una "variable" a
-        Si es `Nothing` se termina la función y se devuelve nothing
-        Si es `Just a` la "variable" toma el valor a SIN EL JUST
--}
+-- Funciones de acceso al tablero según coordenadas fila/columna
+{- El operador <- es una "asignación"  `Maybe a` en una binding `a`
+ -   Si es `Nothing` se termina la función y se devuelve Nothing
+ -   Si es `Just a` el nombre toma el valor contenido en él -}
 getDeTablero :: Tablero -> Int -> Int -> Maybe Casilla
 getDeTablero tablero i j = do
-    filaActual <- getNUpla tablero i
-    getNUpla filaActual j
+    fila <- getNUpla tablero i
+    getNUpla fila j
 
 setEnTablero :: Tablero -> Int -> Int -> Casilla -> Maybe Tablero
 setEnTablero tablero i j cas = do
-    filaActual <- getNUpla tablero i -- La fila de indice i (0 a 8) de tableroshow 
-    nuevaFila <- setNUpla filaActual j cas -- Arma una nueva fila con la nueva casilla
-    setNUpla tablero i nuevaFila -- Cola la nueva fila en el tablero
+    fila <- getNUpla tablero i -- La fila de indice i (0 a 8)
+    fila' <- setNUpla fila j cas -- Arma una nueva fila con la nueva casilla
+    setNUpla tablero i fila' -- Cola la nueva fila en el tablero
 
 
 -- Funciones asistentes
@@ -109,7 +104,6 @@ acciones t p = do
     
 
 -- Aplica una acción al tablero dando el nuevo estado de juego
--- TODO: quitar piezas atacadas
 next :: TablutGame -> (TablutPlayer, TablutAction) -> TablutGame
 next (TablutGame ShieldPlayer _) (SwordPlayer, _) = error "Este no es el jugador activo"
 next (TablutGame SwordPlayer _) (ShieldPlayer, _) = error "Este no es el jugador activo"
@@ -139,36 +133,8 @@ quitarComidos t (i, j) p =
             victima <- getDeTablero t i j
             ally <- getDeTablero t i' j'
             if victima == tuPeon (oponente p) && ally == tuPeon p
-                then return $ eliminaElPeon t (i, j)
+                then setEnTablero t i j Vacia
                 else Nothing
-
-
-
-
-
-eliminaElPeon :: Tablero -> (Int,Int) -> Tablero
-eliminaElPeon t (i,j) = fromJust $ do
-    c <- getDeTablero t i j
-    setEnTablero t i j Vacia
-
-{-Funciona igual que reyRodeado pero recibe un tipo de casilla,
-PeonBlanco o PeonNegro y devuelve true si el peón esta encerrado 
-vertical u horizontalmente. -}
-peonRodeado :: Tablero -> (Int,Int) -> Casilla -> Bool
-peonRodeado t (i,j) c = peonRodeadoHor || peonRodeadoVer
-    where
-        hor = do
-            w <- getDeTablero t i (j - 1)
-            s <- getDeTablero t i (j + 1)
-            return ((w,s) == (c,c))
-            
-        ver = do
-            a <- getDeTablero t (i-1) j   
-            d <- getDeTablero t (i+1) j
-            return ((a,d) == (c,c))
-        
-        peonRodeadoHor = fromMaybe False hor -- Si es Nothing es falso (estamos en un borde)
-        peonRodeadoVer = fromMaybe False ver 
 
 
 realizarMov :: TablutAction -> Tablero -> Tablero
