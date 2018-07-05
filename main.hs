@@ -113,7 +113,10 @@ next (TablutGame p t) (_, m@(Mover _ coord _)) =
 
 quitarComidos :: Tablero -> (Int, Int) -> TablutPlayer -> Tablero
 quitarComidos t (i, j) p = 
-    let p = [((i+1, j), (i+2, j)), ((i-1, j), (i-2, j)), ((i, j+1), (i, j+2)), ((i, j-1), (i, j-2))]
+    let p = [ ((i+1, j), (i+2, j))
+            , ((i-1, j), (i-2, j))
+            , ((i, j+1), (i, j+2))
+            , ((i, j-1), (i, j-2))]
     in foldl nuevoTableroComiendo t p
     where
         tuPeon SwordPlayer = PeonEspada
