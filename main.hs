@@ -66,6 +66,10 @@ esDeJugador t (i,j) p =
     of Nothing -> False
        Just a -> a `elem` piezas p
 
+coordsPostAction :: TablutAction -> (Int, Int)
+coordsPostAction (Mover Horizontal (i, j) d) = (i, j+d)
+coordsPostAction (Mover Vertical (i, j) d) = (i+d, j)
+
 -- Computa los movimientos posibles       
 actions :: TablutGame -> [(TablutPlayer, [TablutAction])]
 actions (TablutGame ShieldPlayer t) = 
@@ -99,20 +103,13 @@ acciones t p = do
 next :: TablutGame -> (TablutPlayer, TablutAction) -> TablutGame
 next (TablutGame ShieldPlayer _) (SwordPlayer, _) = error "Este no es el jugador activo"
 next (TablutGame SwordPlayer _) (ShieldPlayer, _) = error "Este no es el jugador activo"
-next (TablutGame p t) (p', m@(Mover _ coord _)) = 
+next (TablutGame p t) (_, m@(Mover _ coord _)) = 
     if esDeJugador t coord p 
-        then fromJust $ do
+        then
             let t' = realizarMov m t
-            let (i', j') = nuevasCoordenadas m
-            
-            return $ TablutGame (oponente p) (quitarComidos t' (i', j') p)
+                coord' = coordsPostAction m
+            in TablutGame (oponente p) (quitarComidos t' coord' p)
         else error "No tienes una ficha en esa posición"
-
-nuevasCoordenadas :: TablutAction -> (Int, Int)
-nuevasCoordenadas (Mover Horizontal (i, j) d) = (i, j+d)
-nuevasCoordenadas (Mover Vertical (i, j) d) = (i+d, j)
-
-
 
 quitarComidos :: Tablero -> (Int, Int) -> TablutPlayer -> Tablero
 quitarComidos t (i, j) p = 
@@ -252,7 +249,7 @@ runMatch ags@(ag1, ag2) g = do
 de consola.
 -}
 runOnConsole :: IO [(TablutPlayer, Int)]
-runOnConsole = runMatch (consoleAgent ShieldPlayer, randomAgent SwordPlayer) beginning
+runOnConsole = runMatch (randomAgent ShieldPlayer, randomAgent SwordPlayer) beginning
 
 {- El agente de consola ´consoleAgent´ muestra el estado de juego y los movimientos disponibles por
 consola, y espera una acción por entrada de texto.
