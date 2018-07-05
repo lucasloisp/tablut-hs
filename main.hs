@@ -60,8 +60,8 @@ piezas :: TablutPlayer -> [Casilla]
 piezas SwordPlayer = [PeonEspada]
 piezas ShieldPlayer = [Rey, PeonEscudo]
 
-jugadorEs :: Tablero -> (Int, Int) -> TablutPlayer -> Bool
-jugadorEs t (i,j) p = 
+esDeJugador :: Tablero -> (Int, Int) -> TablutPlayer -> Bool
+esDeJugador t (i,j) p = 
     case getDeTablero t i j 
     of Nothing -> False
        Just a -> a `elem` piezas p
@@ -77,7 +77,7 @@ acciones :: Tablero -> TablutPlayer -> [TablutAction]
 acciones t p = do
     i <- [0..8]
     j <- [0..8]
-    if jugadorEs t (i, j) p
+    if esDeJugador t (i, j) p
         then movArriba i j ++ movAbajo i j ++ movIzq i j ++ movDer i j
         else []
     where
@@ -107,7 +107,7 @@ next :: TablutGame -> (TablutPlayer, TablutAction) -> TablutGame
 next (TablutGame ShieldPlayer _) (SwordPlayer, _) = error "Este no es el jugador activo"
 next (TablutGame SwordPlayer _) (ShieldPlayer, _) = error "Este no es el jugador activo"
 next (TablutGame p t) (p', m@(Mover _ coord _)) = 
-    if jugadorEs t coord p 
+    if esDeJugador t coord p 
         then fromJust $ do
             let t' = realizarMov m t
             let (i', j') = nuevasCoordenadas m
