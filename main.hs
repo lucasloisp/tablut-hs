@@ -81,26 +81,19 @@ acciones t p = do
         then movArriba i j ++ movAbajo i j ++ movIzq i j ++ movDer i j
         else []
     where
-        movsVert i j m d = do
-            c' <- maybeToList $ getDeTablero t (i + d) j
-            if c' == Vacia
-                then Mover Vertical (i, j) d : movsVert i j m (m d)
-                else []
-        movsHoriz i j m d = do
-            c' <- maybeToList $ getDeTablero t i (j + d)
-            if c' == Vacia
-                then Mover Horizontal (i, j) d : movsHoriz i j m (m d)
-                else []
+        movsVert i j favance d =
+            case getDeTablero t (i + d) j
+                of Just Vacia -> Mover Vertical (i, j) d : movsVert i j favance (favance d)
+                   _ -> []
+        movsHoriz i j favance d =
+            case getDeTablero t i (j+d)
+                of Just Vacia -> Mover Horizontal (i, j) d : movsHoriz i j favance (favance d)
+                   _ -> []
 
         movArriba i j = movsVert i j (+1) 1
         movAbajo i j = movsVert i j (subtract 1) (-1)
         movIzq i j = movsHoriz i j (subtract 1) (-1)
-        movDer i j = movsHoriz i j (+1) 1
-
-        piezasEnLineaHoriz a b k = [c | j'' <- entre a b, c <- maybeToList (getDeTablero t k j'')]
-        piezasEnLineaVert a b k = [c | i'' <- entre a b, c <- maybeToList (getDeTablero t i'' k)]
-        entre a b = [p | p <- [0..8], p `elem` ([(a+1)..b]++[b..(a-1)]) ]
-    
+        movDer i j = movsHoriz i j (+1) 1    
 
 -- Aplica una acción al tablero dando el nuevo estado de juego
 next :: TablutGame -> (TablutPlayer, TablutAction) -> TablutGame
