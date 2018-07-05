@@ -77,8 +77,7 @@ acciones :: Tablero -> TablutPlayer -> [TablutAction]
 acciones t p = do
     i <- [0..8]
     j <- [0..8]
-    c <- maybeToList $ getDeTablero t i j
-    if c `elem` piezas p
+    if jugadorEs t (i, j) p
         then movArriba i j ++ movAbajo i j ++ movIzq i j ++ movDer i j
         else []
     where
