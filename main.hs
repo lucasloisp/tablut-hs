@@ -108,23 +108,22 @@ next (TablutGame p t) (_, m@(Mover _ coord _)) =
         then
             let t' = realizarMov m t
                 coord' = coordsPostAction m
-            in TablutGame (oponente p) (quitarComidos t' coord' p)
+            in TablutGame (oponente p) (quitarCapturados t' coord' p)
         else error "No tienes una ficha en esa posición"
 
-quitarComidos :: Tablero -> (Int, Int) -> TablutPlayer -> Tablero
-quitarComidos t (i, j) p = 
-    let p = [ ((i+1, j), (i+2, j))
+quitarCapturados :: Tablero -> (Int, Int) -> TablutPlayer -> Tablero
+quitarCapturados t (i, j) p = foldl capturar t p
+    where
+        p = [ ((i+1, j), (i+2, j))
             , ((i-1, j), (i-2, j))
             , ((i, j+1), (i, j+2))
-            , ((i, j-1), (i, j-2))]
-    in foldl nuevoTableroComiendo t p
-    where
-        tuPeon SwordPlayer = PeonEspada
-        tuPeon ShieldPlayer = PeonEscudo
-        nuevoTableroComiendo t ((i, j), (i', j')) = fromMaybe t $ do
+            , ((i, j-1), (i, j-2)) ]
+        peon SwordPlayer = PeonEspada
+        peon ShieldPlayer = PeonEscudo
+        capturar t ((i, j), (i', j')) = fromMaybe t $ do
             victima <- getDeTablero t i j
             ally <- getDeTablero t i' j'
-            if victima == tuPeon (oponente p) && ally == tuPeon p
+            if victima == peon (oponente p) && ally == peon p
                 then setEnTablero t i j Vacia
                 else Nothing
 
