@@ -1,3 +1,11 @@
+{-
+ - Lucas Lois
+ - Agustín Paredes
+ - Germán Pujadas
+ - Pablo Quagliata
+-}
+
+
 import Data.List
 import Data.Maybe
 import System.Random (randomRIO)
@@ -290,8 +298,8 @@ consoleAgent player state = do
       if input `elem` moves then return (Just input) else do 
          putStrLn "Invalid move!"
          consoleAgent player state
--- | La función crea movimientos al azar para un tipo de jugador (simulando la experiencia de jugar contra la máquina)
 
+		 -- | La función crea movimientos al azar para un tipo de jugador (simulando la experiencia de jugar contra la máquina)
 randomAgent :: TablutPlayer -> TablutAgent
 randomAgent player state = do
     let moves = fromJust $ lookup player (actions state)
