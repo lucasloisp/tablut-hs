@@ -70,6 +70,10 @@ coordsPostAction :: TablutAction -> (Int, Int)
 coordsPostAction (Mover Horizontal (i, j) d) = (i, j+d)
 coordsPostAction (Mover Vertical (i, j) d) = (i+d, j)
 
+oponente :: TablutPlayer -> TablutPlayer
+oponente ShieldPlayer = SwordPlayer
+oponente SwordPlayer = ShieldPlayer
+
 -- Computa los movimientos posibles       
 actions :: TablutGame -> [(TablutPlayer, [TablutAction])]
 actions (TablutGame ShieldPlayer t) = 
@@ -112,12 +116,12 @@ next (TablutGame p t) (_, m@(Mover _ coord _)) =
         else error "No tienes una ficha en esa posición"
 
 quitarCapturados :: Tablero -> (Int, Int) -> TablutPlayer -> Tablero
-quitarCapturados t (i, j) p = foldl capturar t p
+quitarCapturados t (i, j) p = foldl capturar t pos
     where
-        p = [ ((i+1, j), (i+2, j))
-            , ((i-1, j), (i-2, j))
-            , ((i, j+1), (i, j+2))
-            , ((i, j-1), (i, j-2)) ]
+        pos = [ ((i+1, j), (i+2, j))
+              , ((i-1, j), (i-2, j))
+              , ((i, j+1), (i, j+2))
+              , ((i, j-1), (i, j-2)) ]
         peon SwordPlayer = PeonEspada
         peon ShieldPlayer = PeonEscudo
         capturar t ((i, j), (i', j')) = fromMaybe t $ do
@@ -126,7 +130,6 @@ quitarCapturados t (i, j) p = foldl capturar t p
             if victima == peon (oponente p) && ally == peon p
                 then setEnTablero t i j Vacia
                 else Nothing
-
 
 realizarMov :: TablutAction -> Tablero -> Tablero
 realizarMov (Mover Horizontal (i, j) d) t = fromJust $ do
@@ -139,43 +142,37 @@ realizarMov (Mover Vertical (i, j) d) t = fromJust $ do
     setEnTablero t' (i+d) j c 
 
 
-buscarRey :: Tablero -> (Int, Int)
-buscarRey t = head $ do
-    i <- [0..8]
-    j <- [0..8]
-    c <-maybeToList $ getDeTablero t i j
-    if c == Rey
-        then return (i, j)
-        else []
-
-reyRodeado :: Tablero -> (Int, Int) -> Bool
-reyRodeado t (i, j) = fromJust $ do
-    w <- getDeTablero t i (j - 1)
-    a <- getDeTablero t (i-1) j
-    s <- getDeTablero t i (j + 1)
-    d <- getDeTablero t (i+1) j
-    return ((w, a, s, d) == (PeonEspada, PeonEspada, PeonEspada, PeonEspada))
-
 {- Si el juego está terminado retorna el resultado de juego para cada jugador. 
  - 1 si el jugador ganó, -1 si perdió y 0 si se empató
  - Si el juego no está terminado, se debe retornar una lista vacía. -}
 result :: TablutGame -> [(TablutPlayer, Int)]
 result (TablutGame _ t) =
-    let (i, j) = buscarRey t -- I,J serán las coordenadas del Rey (en este momento).
+    let (i, j) = buscarRey t -- i,j son las coordenadas del Rey (en este momento).
     in if (i `elem` [0, 8]) || (j `elem` [0, 8]) --Si está en cualquier borde, el shieldPlayer gana
         then [(ShieldPlayer, 1), (SwordPlayer, -1)]
         else if reyRodeado t (i, j)
             then [(ShieldPlayer, -1), (SwordPlayer, 1)]
             else []
 
+buscarRey :: Tablero -> (Int, Int)
+buscarRey t = head $ do
+    i <- [0..8]
+    j <- [0..8]
+    case getDeTablero t i j 
+        of Just Rey -> return (i, j)
+           _ -> []
+
+reyRodeado :: Tablero -> (Int, Int) -> Bool
+reyRodeado t (i, j) = fromMaybe False $ do
+    w <- getDeTablero t i (j - 1)
+    a <- getDeTablero t (i-1) j
+    s <- getDeTablero t i (j + 1)
+    d <- getDeTablero t (i+1) j
+    return ((w, a, s, d) == (PeonEspada, PeonEspada, PeonEspada, PeonEspada))
 
 activePlayer :: TablutGame -> Maybe TablutPlayer
 activePlayer g@(TablutGame p _) = if null (result g) then Just p else Nothing
 
-oponente :: TablutPlayer -> TablutPlayer
-oponente ShieldPlayer = SwordPlayer
-oponente SwordPlayer = ShieldPlayer
-    
 
 beginning :: TablutGame
 beginning = TablutGame ShieldPlayer t -- (f1, f2, f3, f4, f5, f6, f7, f8, f9)
