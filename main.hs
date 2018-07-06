@@ -1,8 +1,5 @@
 {-
  - Lucas Lois
- - Agustín Paredes
- - Germán Pujadas
- - Pablo Quagliata
 -}
 
 
@@ -18,7 +15,7 @@ data Casilla = Vacia | PeonEspada | PeonEscudo | Rey deriving (Eq)
 
 type Fila = (Casilla, Casilla, Casilla, Casilla, Casilla, Casilla, Casilla, Casilla, Casilla)
 type Tablero = (Fila, Fila, Fila, Fila, Fila, Fila, Fila, Fila, Fila)
-data TablutGame = TablutGame TablutPlayer Tablero
+data TablutGame = TablutGame TablutPlayer Tablero Int
 
 
 -- |Permite el acceso por índice a los elementos de una 9-upla
@@ -91,9 +88,9 @@ oponente SwordPlayer = ShieldPlayer
 
 -- |Computa los movimientos posibles para cada jugador
 actions :: TablutGame -> [(TablutPlayer, [TablutAction])]
-actions (TablutGame ShieldPlayer t) = 
+actions (TablutGame ShieldPlayer t _) = 
     [(SwordPlayer, []) , (ShieldPlayer, acciones t ShieldPlayer)]
-actions (TablutGame SwordPlayer t) = 
+actions (TablutGame SwordPlayer t _) = 
     [(ShieldPlayer, []) , (SwordPlayer, acciones t SwordPlayer)]
 
 -- |Computa los movimientos posibles para un jugador determinado
@@ -121,14 +118,14 @@ acciones t p = do
 
 -- |Aplica una acción al tablero dando el nuevo estado de juego
 next :: TablutGame -> (TablutPlayer, TablutAction) -> TablutGame
-next (TablutGame ShieldPlayer _) (SwordPlayer, _) = error "Este no es el jugador activo"
-next (TablutGame SwordPlayer _) (ShieldPlayer, _) = error "Este no es el jugador activo"
-next (TablutGame p t) (_, m@(Mover _ coord _)) = 
+next (TablutGame ShieldPlayer _ nj) (SwordPlayer, _) = error "Este no es el jugador activo"
+next (TablutGame SwordPlayer _ nj) (ShieldPlayer, _) = error "Este no es el jugador activo"
+next (TablutGame p t nj) (_, m@(Mover _ coord _)) = 
     if esDeJugador t coord p 
         then
             let t' = realizarMov m t
                 coord' = coordsPostAction m
-            in TablutGame (oponente p) (quitarCapturados t' coord' p)
+            in TablutGame (oponente p) (quitarCapturados t' coord' p) (nj+1)
         else error "No tienes una ficha en esa posición"
 {-|
   Modifica al tablero quitando las piezas capturadas. 
@@ -168,13 +165,15 @@ realizarMov (Mover Vertical (i, j) d) t = fromJust $ do
   Si el juego no está terminado, se debe retornar una lista vacía. 
 -}
 result :: TablutGame -> [(TablutPlayer, Int)]
-result (TablutGame _ t) =
-    let (i, j) = buscarRey t -- i,j son las coordenadas del Rey (en este momento).
-    in if (i `elem` [0, 8]) || (j `elem` [0, 8]) --Si está en cualquier borde, el shieldPlayer gana
-        then [(ShieldPlayer, 1), (SwordPlayer, -1)]
-        else if reyRodeado t (i, j)
-            then [(ShieldPlayer, -1), (SwordPlayer, 1)]
-            else []
+result (TablutGame _ t nj)
+    | nj > 100 = [(ShieldPlayer, 1), (SwordPlayer, 1)] -- Si se realizaron más de 100 jugadas es un empate
+    | otherwise =
+        let (i, j) = buscarRey t -- i,j son las coordenadas del Rey (en este momento).
+        in if (i `elem` [0, 8]) || (j `elem` [0, 8]) --Si está en cualquier borde, el shieldPlayer gana
+            then [(ShieldPlayer, 1), (SwordPlayer, -1)]
+            else if reyRodeado t (i, j)
+                then [(ShieldPlayer, -1), (SwordPlayer, 1)]
+                else []
 
 -- |Busca al rey en el tablero y devuelve su posición.            
 buscarRey :: Tablero -> (Int, Int)
@@ -198,14 +197,14 @@ reyRodeado t (i, j) = fromMaybe False $ do
 
 -- | La funcion dado un tablero, devuelve el jugador activo. 
 activePlayer :: TablutGame -> Maybe TablutPlayer
-activePlayer g@(TablutGame p _) = if null (result g) then Just p else Nothing
+activePlayer g@(TablutGame p _ _) = if null (result g) then Just p else Nothing
 
 
 -- |El tablero inicial del juego.
 beginning :: TablutGame
-beginning = TablutGame ShieldPlayer t -- (f1, f2, f3, f4, f5, f6, f7, f8, f9)
+beginning = TablutGame ShieldPlayer t 0 -- (f1, f2, f3, f4, f5, f6, f7, f8, f9)
     where
-        t = ((Vacia, Vacia, Vacia, PeonEspada, PeonEspada, PeonEspada, Vacia, Vacia, Vacia)
+        t = ((PeonEspada, Vacia, Vacia, PeonEspada, PeonEspada, PeonEspada, Vacia, Vacia, PeonEspada)
             ,(Vacia, Vacia, Vacia, Vacia, PeonEspada, Vacia, Vacia, Vacia, Vacia)
             ,(Vacia, Vacia, Vacia, Vacia, PeonEscudo, Vacia, Vacia, Vacia, Vacia)
             ,(PeonEspada, Vacia, Vacia, Vacia, PeonEscudo, Vacia, Vacia, Vacia, PeonEspada)
@@ -213,7 +212,7 @@ beginning = TablutGame ShieldPlayer t -- (f1, f2, f3, f4, f5, f6, f7, f8, f9)
             ,(PeonEspada, Vacia, Vacia, Vacia, PeonEscudo, Vacia, Vacia, Vacia, PeonEspada)
             ,(Vacia, Vacia, Vacia, Vacia, PeonEscudo, Vacia, Vacia, Vacia, Vacia)
             ,(Vacia, Vacia, Vacia, Vacia, PeonEspada, Vacia, Vacia, Vacia, Vacia)
-            ,(Vacia, Vacia, Vacia, PeonEspada, PeonEspada, PeonEspada, Vacia, Vacia, Vacia))
+            ,(PeonEspada, Vacia, Vacia, PeonEspada, PeonEspada, PeonEspada, Vacia, Vacia, PeonEspada))
 
 
 -- Ø Shield ± Sword  ¥ King
@@ -228,7 +227,7 @@ instance Show TablutGame where
 
 -- |Representa el estado de juego, tablero y jugador actual.
 showBoard :: TablutGame -> String
-showBoard (TablutGame j t) = show j ++ showTablero t
+showBoard (TablutGame j t nj) = show j ++ " (se hicieron " ++ show nj ++ " jugadas)" ++ showTablero t
 
 -- |Representa el tablero, con sus fichas y coordenadas
 showTablero :: Tablero -> String 
@@ -299,7 +298,7 @@ consoleAgent player state = do
          putStrLn "Invalid move!"
          consoleAgent player state
 
-		 -- | La función crea movimientos al azar para un tipo de jugador (simulando la experiencia de jugar contra la máquina)
+-- | La función crea movimientos al azar para un tipo de jugador (simulando la experiencia de jugar contra la máquina)
 randomAgent :: TablutPlayer -> TablutAgent
 randomAgent player state = do
     let moves = fromJust $ lookup player (actions state)
@@ -309,5 +308,3 @@ randomAgent player state = do
     else do
        i <- randomRIO (0, length moves - 1)
        return (Just (moves !! i))
-
-      
