@@ -13,7 +13,7 @@ type Tablero = (Fila, Fila, Fila, Fila, Fila, Fila, Fila, Fila, Fila)
 data TablutGame = TablutGame TablutPlayer Tablero
 
 
--- Funciones asistenes para trabajar con tuplas de 9 elementos
+-- |Permite el acceso por índice a los elementos de una 9-upla
 getNUpla :: (a, a, a, a, a, a, a, a, a) -> Int -> Maybe a
 getNUpla (a, _, _, _, _, _, _, _, _) 0 = Just a
 getNUpla (_, a, _, _, _, _, _, _, _) 1 = Just a
@@ -26,6 +26,7 @@ getNUpla (_, _, _, _, _, _, _, a, _) 7 = Just a
 getNUpla (_, _, _, _, _, _, _, _, a) 8 = Just a
 getNUpla _ _= Nothing 
 
+-- |Permite cambiar por índice el valor a un elemento de una 9-upla
 setNUpla :: (a, a, a, a, a, a, a, a, a) -> Int -> a -> Maybe (a, a, a, a, a, a, a, a, a)
 setNUpla (_, e1, e2, e3, e4, e5, e6, e7, e8) 0 e' = Just (e', e1, e2, e3, e4, e5, e6, e7, e8)
 setNUpla (e0, _, e2, e3, e4, e5, e6, e7, e8) 1 e' = Just (e0, e', e2, e3, e4, e5, e6, e7, e8)
@@ -40,14 +41,16 @@ setNUpla _ _ _ = Nothing
 
 
 -- Funciones de acceso al tablero según coordenadas fila/columna
-{- El operador <- es una "asignación"  `Maybe a` en una binding `a`
+{- El operador <- es una "asignación" `Maybe a` en una binding `a`
  -   Si es `Nothing` se termina la función y se devuelve Nothing
  -   Si es `Just a` el nombre toma el valor contenido en él -}
+-- |Permite acceder al valor de una casilla del tablero dados los índices de fila-columna
 getDeTablero :: Tablero -> Int -> Int -> Maybe Casilla
 getDeTablero tablero i j = do
     fila <- getNUpla tablero i
     getNUpla fila j
 
+-- |Permite cambiar el valor de una casilla del tablero dados los índices fila-columna
 setEnTablero :: Tablero -> Int -> Int -> Casilla -> Maybe Tablero
 setEnTablero tablero i j cas = do
     fila <- getNUpla tablero i -- La fila de indice i (0 a 8)
@@ -56,31 +59,36 @@ setEnTablero tablero i j cas = do
 
 
 -- Funciones asistentes
+-- |La lista de piezas pertenecientes a cada jugador.
 piezas :: TablutPlayer -> [Casilla]
 piezas SwordPlayer = [PeonEspada]
 piezas ShieldPlayer = [Rey, PeonEscudo]
 
+-- |Verifica si la ficha en una casilla (determinada por fila-columna) es del jugador dado
 esDeJugador :: Tablero -> (Int, Int) -> TablutPlayer -> Bool
 esDeJugador t (i,j) p = 
     case getDeTablero t i j 
     of Nothing -> False
        Just a -> a `elem` piezas p
 
+-- |Calcula las nuevas coordenadas que da una acción
 coordsPostAction :: TablutAction -> (Int, Int)
 coordsPostAction (Mover Horizontal (i, j) d) = (i, j+d)
 coordsPostAction (Mover Vertical (i, j) d) = (i+d, j)
 
+-- |El jugador oponente al dado
 oponente :: TablutPlayer -> TablutPlayer
 oponente ShieldPlayer = SwordPlayer
 oponente SwordPlayer = ShieldPlayer
 
--- Computa los movimientos posibles       
+-- |Computa los movimientos posibles para cada jugador
 actions :: TablutGame -> [(TablutPlayer, [TablutAction])]
 actions (TablutGame ShieldPlayer t) = 
     [(SwordPlayer, []) , (ShieldPlayer, acciones t ShieldPlayer)]
 actions (TablutGame SwordPlayer t) = 
     [(ShieldPlayer, []) , (SwordPlayer, acciones t SwordPlayer)]
 
+-- |Computa los movimientos posibles para un jugador determinado
 acciones :: Tablero -> TablutPlayer -> [TablutAction]
 acciones t p = do
     i <- [0..8]
@@ -103,7 +111,7 @@ acciones t p = do
         movIzq i j = movsHoriz i j (subtract 1) (-1)
         movDer i j = movsHoriz i j (+1) 1    
 
--- Aplica una acción al tablero dando el nuevo estado de juego
+-- |Aplica una acción al tablero dando el nuevo estado de juego
 next :: TablutGame -> (TablutPlayer, TablutAction) -> TablutGame
 next (TablutGame ShieldPlayer _) (SwordPlayer, _) = error "Este no es el jugador activo"
 next (TablutGame SwordPlayer _) (ShieldPlayer, _) = error "Este no es el jugador activo"
@@ -114,7 +122,10 @@ next (TablutGame p t) (_, m@(Mover _ coord _)) =
                 coord' = coordsPostAction m
             in TablutGame (oponente p) (quitarCapturados t' coord' p)
         else error "No tienes una ficha en esa posición"
-
+{-|
+  Modifica al tablero quitando las piezas capturadas. 
+  Toma la posición de la última pieza movida ya que solo ella puede estar 'atacando'  
+-}
 quitarCapturados :: Tablero -> (Int, Int) -> TablutPlayer -> Tablero
 quitarCapturados t (i, j) p = foldl capturar t pos
     where
@@ -131,6 +142,7 @@ quitarCapturados t (i, j) p = foldl capturar t pos
                 then setEnTablero t i j Vacia
                 else Nothing
 
+-- |Realiza un movimiento en el tablero, aplicando la acción. Da error si el movimiento es imposible (fuera de rango)
 realizarMov :: TablutAction -> Tablero -> Tablero
 realizarMov (Mover Horizontal (i, j) d) t = fromJust $ do
     c <- getDeTablero t i j
@@ -142,9 +154,11 @@ realizarMov (Mover Vertical (i, j) d) t = fromJust $ do
     setEnTablero t' (i+d) j c 
 
 
-{- Si el juego está terminado retorna el resultado de juego para cada jugador. 
- - 1 si el jugador ganó, -1 si perdió y 0 si se empató
- - Si el juego no está terminado, se debe retornar una lista vacía. -}
+{-|
+  Si el juego termió retorna el resultado de juego para cada jugador. 
+  1 si el jugador ganó, -1 si perdió y 0 si se empató
+  Si el juego no está terminado, se debe retornar una lista vacía. 
+-}
 result :: TablutGame -> [(TablutPlayer, Int)]
 result (TablutGame _ t) =
     let (i, j) = buscarRey t -- i,j son las coordenadas del Rey (en este momento).
@@ -154,6 +168,7 @@ result (TablutGame _ t) =
             then [(ShieldPlayer, -1), (SwordPlayer, 1)]
             else []
 
+-- |Busca al rey en el tablero y devuelve su posición.            
 buscarRey :: Tablero -> (Int, Int)
 buscarRey t = head $ do
     i <- [0..8]
@@ -162,6 +177,8 @@ buscarRey t = head $ do
         of Just Rey -> return (i, j)
            _ -> []
 
+-- |La función dado el tablero y la posición del rey, devuelve true si el Rey esta rodeado por arriba, abajo, izquierda y
+-- derecha por peones espada.
 reyRodeado :: Tablero -> (Int, Int) -> Bool
 reyRodeado t (i, j) = fromMaybe False $ do
     w <- getDeTablero t i (j - 1)
@@ -170,10 +187,13 @@ reyRodeado t (i, j) = fromMaybe False $ do
     d <- getDeTablero t (i+1) j
     return ((w, a, s, d) == (PeonEspada, PeonEspada, PeonEspada, PeonEspada))
 
+
+-- | La funcion dado un tablero, devuelve el jugador activo. 
 activePlayer :: TablutGame -> Maybe TablutPlayer
 activePlayer g@(TablutGame p _) = if null (result g) then Just p else Nothing
 
 
+-- |El tablero inicial del juego.
 beginning :: TablutGame
 beginning = TablutGame ShieldPlayer t -- (f1, f2, f3, f4, f5, f6, f7, f8, f9)
     where
@@ -198,12 +218,14 @@ instance Show Casilla where
 instance Show TablutGame where
     show = showBoard
 
+-- |Representa el estado de juego, tablero y jugador actual.
 showBoard :: TablutGame -> String
-showBoard (TablutGame j t) = show j ++ "\n\\ A B C D E F G H I\n" ++ showTablero t
+showBoard (TablutGame j t) = show j ++ showTablero t
 
+-- |Representa el tablero, con sus fichas y coordenadas
 showTablero :: Tablero -> String 
 showTablero (f1, f2, f3, f4, f5, f6, f7, f8, f9) = 
-    intercalate "\n" $ zipWith (\f n -> show n ++ showFila f) fls [0..8]
+    "\n\\ A B C D E F G H I\n" ++ (intercalate "\n" $ zipWith (\f n -> show n ++ showFila f) fls [0..8])
     -- intercalate es: concat intersperse
     -- intersperse intercala x con cada elemento sucesivo de la lista
     where fls = [f1, f2, f3, f4, f5, f6, f7, f8, f9]
@@ -217,6 +239,7 @@ instance Show TablutAction where
         where algebraica i j = letra j:show i
               letra i = "abcdefghi" !! i
 
+-- |Interpreta la representación de un movimiento como una acción de juego
 readAction :: String -> TablutAction
 readAction l = Mover dir (i, j) dd
     where (fro, _:to) = span (/= '/') l -- parte la representación fro/to
@@ -248,7 +271,7 @@ runMatch ags@(ag1, ag2) g = do
 de consola.
 -}
 runOnConsole :: IO [(TablutPlayer, Int)]
-runOnConsole = runMatch (randomAgent ShieldPlayer, randomAgent SwordPlayer) beginning
+runOnConsole = runMatch (consoleAgent ShieldPlayer, consoleAgent SwordPlayer) beginning
 
 {- El agente de consola ´consoleAgent´ muestra el estado de juego y los movimientos disponibles por
 consola, y espera una acción por entrada de texto.
@@ -267,6 +290,7 @@ consoleAgent player state = do
       if input `elem` moves then return (Just input) else do 
          putStrLn "Invalid move!"
          consoleAgent player state
+-- | La función crea movimientos al azar para un tipo de jugador (simulando la experiencia de jugar contra la máquina)
 
 randomAgent :: TablutPlayer -> TablutAgent
 randomAgent player state = do
@@ -278,3 +302,4 @@ randomAgent player state = do
        i <- randomRIO (0, length moves - 1)
        return (Just (moves !! i))
 
+      
