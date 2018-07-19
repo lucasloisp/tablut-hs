@@ -5,11 +5,12 @@ import System.Random (randomRIO)
 -- Tipos de datos
 data TablutPlayer = ShieldPlayer | SwordPlayer deriving (Eq, Show, Enum)
 data Direccion = Vertical | Horizontal deriving (Eq, Show)
-data TablutAction = Mover Direccion (Int, Int) Int deriving (Eq)
+data TablutAction = Mover Direccion Coord2D Int deriving (Eq)
 data Casilla = Vacia | PeonEspada | PeonEscudo | Rey deriving (Eq)
 
 type Fila = (Casilla, Casilla, Casilla, Casilla, Casilla, Casilla, Casilla, Casilla, Casilla)
 type Tablero = (Fila, Fila, Fila, Fila, Fila, Fila, Fila, Fila, Fila)
+type Coord2D = (Int, Int)
 data TablutGame = TablutGame TablutPlayer Tablero Int
 
 
@@ -65,14 +66,14 @@ piezas SwordPlayer = [PeonEspada]
 piezas ShieldPlayer = [Rey, PeonEscudo]
 
 -- |Verifica si la ficha en una casilla (determinada por fila-columna) es del jugador dado
-esDeJugador :: Tablero -> (Int, Int) -> TablutPlayer -> Bool
+esDeJugador :: Tablero -> Coord2D -> TablutPlayer -> Bool
 esDeJugador t (i,j) p = 
     case getDeTablero t i j 
     of Nothing -> False
        Just a -> a `elem` piezas p
 
 -- |Calcula las nuevas coordenadas que da una acción
-coordsPostAction :: TablutAction -> (Int, Int)
+coordsPostAction :: TablutAction -> Coord2D
 coordsPostAction (Mover Horizontal (i, j) d) = (i, j+d)
 coordsPostAction (Mover Vertical (i, j) d) = (i+d, j)
 
@@ -126,7 +127,7 @@ next (TablutGame p t nj) (_, m@(Mover _ coord _)) =
   Modifica al tablero quitando las piezas capturadas. 
   Toma la posición de la última pieza movida ya que solo ella puede estar 'atacando'  
 -}
-quitarCapturados :: Tablero -> (Int, Int) -> TablutPlayer -> Tablero
+quitarCapturados :: Tablero -> Coord2D -> TablutPlayer -> Tablero
 quitarCapturados t (i, j) p = foldl capturar t pos
     where
         pos = [ ((i+1, j), (i+2, j))
@@ -171,7 +172,7 @@ result (TablutGame _ t nj)
                 else []
 
 -- |Busca al rey en el tablero y devuelve su posición.            
-buscarRey :: Tablero -> (Int, Int)
+buscarRey :: Tablero -> Coord2D
 buscarRey t = head $ do
     i <- [0..8]
     j <- [0..8]
@@ -181,7 +182,7 @@ buscarRey t = head $ do
 
 -- |La función dado el tablero y la posición del rey, devuelve true si el Rey esta rodeado por arriba, abajo, izquierda y
 -- derecha por peones espada.
-reyRodeado :: Tablero -> (Int, Int) -> Bool
+reyRodeado :: Tablero -> Coord2D -> Bool
 reyRodeado t (i, j) = fromMaybe False $ do
     w <- getDeTablero t i (j - 1)
     a <- getDeTablero t (i-1) j
