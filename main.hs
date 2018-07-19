@@ -1,8 +1,3 @@
-{-
- - Lucas Lois
--}
-
-
 import Data.List
 import Data.Maybe
 import System.Random (randomRIO)
