@@ -293,13 +293,4 @@ consoleAgent player state = do
          putStrLn "Invalid move!"
          consoleAgent player state
 
--- | La función crea movimientos al azar para un tipo de jugador (simulando la experiencia de jugar contra la máquina)
-randomAgent :: TablutPlayer -> TablutAgent
-randomAgent player state = do
-    let moves = fromJust $ lookup player (actions state)
-    if null moves then do
-       putStrLn "No moves!"
-       return Nothing
-    else do
-       i <- randomRIO (0, length moves - 1)
-       return (Just (moves !! i))
+main = runOnConsole
