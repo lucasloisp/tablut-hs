@@ -98,19 +98,14 @@ acciones t p = do
         then movArriba i j ++ movAbajo i j ++ movIzq i j ++ movDer i j
         else []
     where
-        movsVert i j favance d =
-            case getCasilla t (i + d) j
-                of Just Vacia -> Mover Vertical (i, j) d : movsVert i j favance (favance d)
-                   _ -> []
-        movsHoriz i j favance d =
-            case getCasilla t i (j+d)
-                of Just Vacia -> Mover Horizontal (i, j) d : movsHoriz i j favance (favance d)
-                   _ -> []
+        movArriba i j = takeWhile llevaAVacia $ map (Mover Vertical (i, j)) [1..]
+        movAbajo i j = takeWhile llevaAVacia $ map (Mover Vertical (i, j)) [(-1),(-2)..]
+        movDer i j = takeWhile llevaAVacia $ map (Mover Horizontal (i, j)) [1..]
+        movIzq i j = takeWhile llevaAVacia $ map (Mover Horizontal (i, j)) [(-1),(-2)..]
 
-        movArriba i j = movsVert i j (+1) 1
-        movAbajo i j = movsVert i j (subtract 1) (-1)
-        movIzq i j = movsHoriz i j (subtract 1) (-1)
-        movDer i j = movsHoriz i j (+1) 1
+        llevaAVacia act =
+            let (fila, col) = coordsPostAction act
+            in getCasilla t fila col == Just Vacia
 
 -- |Aplica una acción al tablero dando el nuevo estado de juego
 next :: TablutGame -> (TablutPlayer, TablutAction) -> TablutGame
