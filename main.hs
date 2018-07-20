@@ -223,7 +223,7 @@ showBoard (TablutGame j t nj) = show j ++ " (se hicieron " ++ show nj ++ " jugad
 -- |Representa el tablero, con sus fichas y coordenadas
 showTablero :: Tablero -> String
 showTablero (f1, f2, f3, f4, f5, f6, f7, f8, f9) =
-    "\n\\ A B C D E F G H I\n" ++ (intercalate "\n" $ zipWith (\f n -> show n ++ showFila f) fls [0..8])
+    "\n\\ A B C D E F G H I\n" ++ intercalate "\n" (zipWith (\f n -> show n ++ showFila f) fls [0..8])
     -- intercalate es: concat intersperse
     -- intersperse intercala x con cada elemento sucesivo de la lista
     where fls = [f1, f2, f3, f4, f5, f6, f7, f8, f9]
