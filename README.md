@@ -10,3 +10,12 @@ course by
 * A. Paredes
 * G. Pujadas
 * P. Quagliata
+
+
+## Instructions
+
+To run the game, using stack, run
+
+```
+stack runhaskell main.hs
+```
